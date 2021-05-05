@@ -21,9 +21,9 @@ while True:
     for i in driver.find_elements(By.CSS_SELECTOR, "div.gs_ai_t"):
         a = i.find_element_by_css_selector('a')
         user_id = a.get_attribute('href').split('=')[-1]
-        author = a.text
+        name = a.text
         affiliation = i.find_element_by_css_selector('div.gs_ai_aff').text
-        df = df.append({'user_id': user_id, 'author': author, 'affiliation': affiliation}, ignore_index=True)
+        df = df.append({'user_id': user_id, 'name': name, 'affiliation': affiliation}, ignore_index=True)
         links.append(a.get_attribute('href'))
     try:
         element = WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.XPATH, '//button[@aria-label="Next"]')))
@@ -43,25 +43,29 @@ for link in links:
     for i in driver.find_elements(By.CSS_SELECTOR, "tr.gsc_a_tr"):
         a = i.find_element_by_css_selector('a')
         a.click()
+        time.sleep(0.5)
         try:
             element = WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, 'gsc_ocd_view')))
         except:
             continue
+        time.sleep(0.5)
         title = driver.find_element_by_id('gsc_vcd_title').text
         author = '-'
         publication_date = '-'
         description = '-'
         cited = '-'
         for j in driver.find_elements(By.ID, 'gsc_vcd_table'):
-            field = j.find_element_by_class_name('gsc_vcd_field').text
-            if field == 'Authors':
-                author = j.find_element_by_class_name('gsc_vcd_value').text
-            if field == 'Publication date':
-                publication_date = j.find_element_by_class_name('gsc_vcd_value').text
-            if field == 'Description':
-                description = j.find_element_by_class_name('gsc_vcd_value').text
-            if field == 'Total citations':
-                cited = j.find_element_by_class_name('gsc_vcd_value').text
+            for field, value in zip(j.find_elements_by_class_name('gsc_vcd_field'),
+                                    j.find_elements_by_class_name('gsc_vcd_value')):
+                if field.text == 'Authors':
+                    author = value.text
+                if field.text == 'Publication date':
+                    publication_date = value.text
+                if field.text == 'Description':
+                    description = value.text
+                if field.text == 'Total citations':
+                    value = value.find_element_by_xpath('//div[@style="margin-bottom:1em"]')
+                    cited = value.text[9:]
         df2 = df2.append({'title': title, 'authors': author, 'publication_date': publication_date,
                           'description': description, 'cite_by': cited}, ignore_index=True)
         driver.find_element_by_id('gs_md_cita-d-x').click()
